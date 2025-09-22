@@ -8,6 +8,27 @@ from typing_extensions import Protocol
 
 
 def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) -> Any:
+    """Computes an approximation to the derivative of f with respect to one arg.
+
+    Calculates the derivative using the central difference method:
+    f'(x) ≈ (f(x + ε) - f(x - ε)) / (2ε)
+
+    See [wikipedia](https://en.wikipedia.org/wiki/Finite_difference) for more details.
+
+    Args:
+        f: arbitrary function from n-scalar args to one value
+        *vals: n-float values $x_0 \ldots x_{n-1}$
+        arg: the number $i$ of the arg to compute the derivative
+        epsilon: a small constant for numerical differentiation
+
+    Returns:
+        An approximation of $f'_i(x_0, \ldots, x_{n-1})$
+    """
+    vals1 = list(vals)
+    vals2 = list(vals)
+    vals1[arg] += epsilon
+    vals2[arg] -= epsilon
+    return (f(*vals1) - f(*vals2)) / (2 * epsilon)
     r"""
     Computes an approximation to the derivative of `f` with respect to one arg.
 
@@ -55,11 +76,14 @@ class Variable(Protocol):
 
 
 def topological_sort(variable: Variable) -> Iterable[Variable]:
-    """
-    Computes the topological order of the computation graph.
+    """Computes the topological order of the computation graph.
+
+    Performs a depth-first search to determine the order in which variables
+    should be processed during backpropagation. Variables are ordered such
+    that each variable appears after all its dependencies.
 
     Args:
-        variable: The right-most variable
+        variable: The right-most variable (output of computation graph).
 
     Returns:
         Non-constant Variables in topological order starting from the right.
@@ -68,6 +92,11 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     order = []
 
     def dfs(var: Variable) -> None:
+        """Depth-first search helper function.
+        
+        Args:
+            var: Current variable to process.
+        """
         if var.unique_id in visited or var.is_constant():
             return
         visited.add(var.unique_id)
@@ -80,15 +109,18 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
-    """
-    Runs backpropagation on the computation graph in order to
-    compute derivatives for the leave nodes.
+    """Runs backpropagation on the computation graph to compute derivatives for leaf nodes.
+
+    Implements the backpropagation algorithm by traversing the computation graph
+    in topological order and accumulating gradients for each variable using the
+    chain rule.
 
     Args:
-        variable: The right-most variable
-        deriv  : Its derivative that we want to propagate backward to the leaves.
+        variable: The right-most variable (output of computation graph).
+        deriv: Its derivative that we want to propagate backward to the leaves.
 
-    No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
+    Returns:
+        None. Writes results to the derivative values of each leaf through `accumulate_derivative`.
     """
     deriv_hist = {variable.unique_id: deriv}
 

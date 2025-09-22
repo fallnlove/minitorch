@@ -99,106 +99,274 @@ class Log(ScalarFunction):
 
 
 class Mul(ScalarFunction):
-    "Multiplication function"
+    """Multiplication function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float, b: float) -> float:
+        """Forward pass for multiplication.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: First input value.
+            b: Second input value.
+            
+        Returns:
+            The product a * b.
+        """
         ctx.save_for_backward(a, b)
         return operators.mul(a, b)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> Tuple[float, float]:
+        """Backward pass for multiplication.
+        
+        Computes gradients using the product rule:
+        ∂/∂a (a * b) = b, ∂/∂b (a * b) = a
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            d_output: Gradient of the output.
+            
+        Returns:
+            Tuple of gradients (d_a, d_b).
+        """
         (a, b) = ctx.saved_values
         return operators.mul(d_output, b), operators.mul(d_output, a)
 
 
 class Inv(ScalarFunction):
-    "Inverse function"
+    """Inverse (reciprocal) function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
+        """Forward pass for inverse function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: Input value.
+            
+        Returns:
+            The reciprocal 1/a.
+        """
         ctx.save_for_backward(a)
         return operators.inv(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
+        """Backward pass for inverse function.
+        
+        Computes gradient using the derivative of 1/x which is -1/x^2.
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            d_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input.
+        """
         (a,) = ctx.saved_values
         return operators.inv_back(a, d_output)
 
 
 class Neg(ScalarFunction):
-    "Negation function"
+    """Negation function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
+        """Forward pass for negation.
+        
+        Args:
+            ctx: Context (not used for negation).
+            a: Input value.
+            
+        Returns:
+            The negation -a.
+        """
         return operators.neg(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
+        """Backward pass for negation.
+        
+        The derivative of -x is -1, so gradient is simply negated.
+        
+        Args:
+            ctx: Context (not used).
+            d_output: Gradient of the output.
+            
+        Returns:
+            Negated gradient.
+        """
         return operators.neg(d_output)
 
 
 class Sigmoid(ScalarFunction):
-    "Sigmoid function"
+    """Sigmoid activation function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
+        """Forward pass for sigmoid function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: Input value.
+            
+        Returns:
+            Sigmoid of a: 1/(1 + exp(-a)).
+        """
         ctx.save_for_backward(a)
         return operators.sigmoid(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
+        """Backward pass for sigmoid function.
+        
+        The derivative of sigmoid(x) is sigmoid(x) * (1 - sigmoid(x)).
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            d_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input.
+        """
         (a,) = ctx.saved_values
         return operators.sigmoid(a) * (1 - operators.sigmoid(a)) * d_output
 
 
 class ReLU(ScalarFunction):
-    "ReLU function"
+    """Rectified Linear Unit (ReLU) activation function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
+        """Forward pass for ReLU function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: Input value.
+            
+        Returns:
+            ReLU of a: max(0, a).
+        """
         ctx.save_for_backward(a)
         return operators.relu(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
+        """Backward pass for ReLU function.
+        
+        The derivative of ReLU(x) is 1 if x > 0, else 0.
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            d_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input.
+        """
         (a,) = ctx.saved_values
         return operators.relu_back(a, d_output)
 
 
 class Exp(ScalarFunction):
-    "Exp function"
+    """Exponential function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
+        """Forward pass for exponential function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: Input value.
+            
+        Returns:
+            Exponential of a: e^a.
+        """
         ctx.save_for_backward(a)
         return operators.exp(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
+        """Backward pass for exponential function.
+        
+        The derivative of exp(x) is exp(x).
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            d_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input.
+        """
         (a,) = ctx.saved_values
         return operators.exp(a) * d_output
 
 
 class LT(ScalarFunction):
-    "Less-than function $f(x) =$ 1.0 if x is less than y else 0.0"
+    """Less-than comparison function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float, b: float) -> float:
+        """Forward pass for less-than comparison.
+        
+        Computes $f(a, b) = 1.0$ if a < b, else $0.0$.
+        
+        Args:
+            ctx: Context (not used for comparison).
+            a: First value to compare.
+            b: Second value to compare.
+            
+        Returns:
+            1.0 if a < b, otherwise 0.0.
+        """
         return operators.lt(a, b)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> Tuple[float, float]:
+        """Backward pass for less-than comparison.
+        
+        Comparison operations have zero gradients as they are non-differentiable.
+        
+        Args:
+            ctx: Context (not used).
+            d_output: Gradient of the output.
+            
+        Returns:
+            Zero gradients for both inputs.
+        """
         return 0.0, 0.0
 
 
 class EQ(ScalarFunction):
-    "Equal function $f(x) =$ 1.0 if x is equal to y else 0.0"
+    """Equality comparison function for scalars with automatic differentiation support."""
 
     @staticmethod
     def forward(ctx: Context, a: float, b: float) -> float:
+        """Forward pass for equality comparison.
+        
+        Computes $f(a, b) = 1.0$ if a == b, else $0.0$.
+        
+        Args:
+            ctx: Context (not used for comparison).
+            a: First value to compare.
+            b: Second value to compare.
+            
+        Returns:
+            1.0 if a == b, otherwise 0.0.
+        """
         return operators.eq(a, b)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> Tuple[float, float]:
+        """Backward pass for equality comparison.
+        
+        Comparison operations have zero gradients as they are non-differentiable.
+        
+        Args:
+            ctx: Context (not used).
+            d_output: Gradient of the output.
+            
+        Returns:
+            Zero gradients for both inputs.
+        """
         return 0.0, 0.0

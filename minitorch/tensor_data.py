@@ -31,16 +31,17 @@ UserStrides: TypeAlias = Sequence[int]
 
 
 def index_to_position(index: Index, strides: Strides) -> int:
-    """
-    Converts a multidimensional tensor `index` into a single-dimensional position in
-    storage based on strides.
+    """Converts a multidimensional tensor index into a single-dimensional position in storage.
+
+    Transforms a multidimensional index tuple into a linear position in the
+    flattened storage array using the tensor's stride information.
 
     Args:
-        index : index tuple of ints
-        strides : tensor strides
+        index: Index tuple of ints representing position in each dimension.
+        strides: Tensor strides indicating memory layout.
 
     Returns:
-        Position in storage
+        Position in storage as an integer.
     """
 
     pos = 0
@@ -51,17 +52,19 @@ def index_to_position(index: Index, strides: Strides) -> int:
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
-    """
-    Convert an `ordinal` to an index in the `shape`.
-    Should ensure that enumerating position 0 ... size of a
-    tensor produces every index exactly once. It
-    may not be the inverse of `index_to_position`.
+    """Converts an ordinal position to a multidimensional index.
+
+    Transforms a linear position in flattened storage back to a multidimensional
+    index tuple based on the tensor shape. Ensures that enumerating positions
+    0 ... size produces every index exactly once.
 
     Args:
-        ordinal: ordinal position to convert.
-        shape : tensor shape.
-        out_index : return index corresponding to position.
+        ordinal: Ordinal position to convert (linear index).
+        shape: Tensor shape defining dimensions.
+        out_index: Output array to store the resulting index.
 
+    Returns:
+        None. Modifies out_index in place.
     """
 
     for dim in range(len(shape) - 1, -1, -1):
@@ -74,21 +77,20 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 def broadcast_index(
     big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
 ) -> None:
-    """
-    Convert a `big_index` into `big_shape` to a smaller `out_index`
-    into `shape` following broadcasting rules. In this case
-    it may be larger or with more dimensions than the `shape`
-    given. Additional dimensions may need to be mapped to 0 or
-    removed.
+    """Converts an index from a larger tensor to a smaller tensor following broadcasting rules.
+
+    Maps an index from a larger (broadcasted) tensor shape to the corresponding
+    index in a smaller tensor shape. Handles dimension alignment and size-1
+    dimension mapping according to NumPy broadcasting semantics.
 
     Args:
-        big_index : multidimensional index of bigger tensor
-        big_shape : tensor shape of bigger tensor
-        shape : tensor shape of smaller tensor
-        out_index : multidimensional index of smaller tensor
+        big_index: Multidimensional index of bigger tensor.
+        big_shape: Tensor shape of bigger tensor.
+        shape: Tensor shape of smaller tensor.
+        out_index: Output array for multidimensional index of smaller tensor.
 
     Returns:
-        None
+        None. Modifies out_index in place.
     """
     
     dim_offset = len(big_shape) - len(shape)
@@ -100,18 +102,21 @@ def broadcast_index(
 
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
-    """
-    Broadcast two shapes to create a new union shape.
+    """Broadcasts two shapes to create a new union shape.
+
+    Implements NumPy-style broadcasting rules to determine the resulting shape
+    when two tensors with different shapes are used in element-wise operations.
+    Dimensions are aligned from the right, and size-1 dimensions are stretched.
 
     Args:
-        shape1 : first shape
-        shape2 : second shape
+        shape1: First tensor shape.
+        shape2: Second tensor shape.
 
     Returns:
-        broadcasted shape
+        Broadcasted shape that both input shapes can be broadcast to.
 
     Raises:
-        IndexingError : if cannot broadcast
+        IndexingError: If shapes cannot be broadcast together.
     """
 
     larger, smaller = (shape1, shape2) if len(shape1) >= len(shape2) else (shape2, shape1)
@@ -241,14 +246,19 @@ class TensorData:
         return (self._storage, self._shape, self._strides)
 
     def permute(self, *order: int) -> TensorData:
-        """
-        Permute the dimensions of the tensor.
+        """Permutes the dimensions of the tensor.
+
+        Reorders the dimensions of the tensor according to the specified order.
+        This creates a new view of the same data with dimensions rearranged.
 
         Args:
-            *order: a permutation of the dimensions
+            *order: A permutation of the dimensions (must include each dimension exactly once).
 
         Returns:
-            New `TensorData` with the same storage and a new dimension order.
+            New `TensorData` with the same storage and reordered dimensions.
+
+        Raises:
+            AssertionError: If order doesn't contain each dimension exactly once.
         """
         assert list(sorted(order)) == list(
             range(len(self.shape))

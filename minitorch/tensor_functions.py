@@ -97,13 +97,36 @@ class Add(Function):
 
 
 class Mul(Function):
+    """Element-wise multiplication function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
+        """Forward pass for element-wise multiplication.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: First input tensor.
+            b: Second input tensor.
+            
+        Returns:
+            Result of element-wise multiplication a * b.
+        """
         ctx.save_for_backward(a, b)
         return a.f.mul_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward pass for element-wise multiplication.
+        
+        Uses the product rule: ∂/∂a (a * b) = b, ∂/∂b (a * b) = a
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Tuple of gradients (grad_a, grad_b).
+        """
         a, b = ctx.saved_values
         return grad_output.f.mul_zip(grad_output, b), grad_output.f.mul_zip(
             grad_output, a
@@ -111,13 +134,35 @@ class Mul(Function):
 
 
 class Sigmoid(Function):
+    """Sigmoid activation function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
+        """Forward pass for sigmoid function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            t1: Input tensor.
+            
+        Returns:
+            Sigmoid of input tensor: 1/(1 + exp(-t1)).
+        """
         ctx.save_for_backward(t1)
         return t1.f.sigmoid_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward pass for sigmoid function.
+        
+        The derivative of sigmoid(x) is sigmoid(x) * (1 - sigmoid(x)).
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input tensor.
+        """
         (t1,) = ctx.saved_values
         sigmoid_t1 = t1.f.sigmoid_map(t1)
         return grad_output.f.add_zip(
@@ -131,37 +176,103 @@ class Sigmoid(Function):
 
 
 class ReLU(Function):
+    """Rectified Linear Unit (ReLU) activation function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
+        """Forward pass for ReLU function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            t1: Input tensor.
+            
+        Returns:
+            ReLU of input tensor: max(0, t1).
+        """
         ctx.save_for_backward(t1)
         return t1.f.relu_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward pass for ReLU function.
+        
+        The derivative of ReLU(x) is 1 if x > 0, else 0.
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input tensor.
+        """
         (t1,) = ctx.saved_values
         return grad_output.f.relu_back_zip(t1, grad_output)
 
 
 class Log(Function):
+    """Natural logarithm function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
+        """Forward pass for natural logarithm function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            t1: Input tensor.
+            
+        Returns:
+            Natural logarithm of input tensor: ln(t1).
+        """
         ctx.save_for_backward(t1)
         return t1.f.log_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward pass for natural logarithm function.
+        
+        The derivative of ln(x) is 1/x.
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input tensor.
+        """
         (t1,) = ctx.saved_values
         return grad_output.f.mul_zip(grad_output, t1.f.inv_map(t1))
 
 
 class Exp(Function):
+    """Exponential function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, t1: Tensor) -> Tensor:
+        """Forward pass for exponential function.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            t1: Input tensor.
+            
+        Returns:
+            Exponential of input tensor: exp(t1).
+        """
         ctx.save_for_backward(t1)
         return t1.f.exp_map(t1)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        """Backward pass for exponential function.
+        
+        The derivative of exp(x) is exp(x).
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Gradient with respect to input tensor.
+        """
         (t1,) = ctx.saved_values
         return grad_output.f.mul_zip(grad_output, t1.f.exp_map(t1))
 
@@ -188,40 +299,121 @@ class All(Function):
 
 
 class LT(Function):
+    """Less-than comparison function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
+        """Forward pass for less-than comparison.
+        
+        Args:
+            ctx: Context (not used for comparison).
+            a: First input tensor.
+            b: Second input tensor.
+            
+        Returns:
+            Tensor with 1.0 where a < b, 0.0 elsewhere.
+        """
         return a.f.lt_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward pass for less-than comparison.
+        
+        Comparison operations have zero gradients as they are non-differentiable.
+        
+        Args:
+            ctx: Context (not used).
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Zero gradients for both inputs.
+        """
         return 0.0, 0.0
 
 
 class EQ(Function):
+    """Equality comparison function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
+        """Forward pass for equality comparison.
+        
+        Args:
+            ctx: Context (not used for comparison).
+            a: First input tensor.
+            b: Second input tensor.
+            
+        Returns:
+            Tensor with 1.0 where a == b, 0.0 elsewhere.
+        """
         return a.f.eq_zip(a, b)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Backward pass for equality comparison.
+        
+        Comparison operations have zero gradients as they are non-differentiable.
+        
+        Args:
+            ctx: Context (not used).
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Zero gradients for both inputs.
+        """
         return 0.0, 0.0
 
 
 class IsClose(Function):
+    """Approximate equality comparison function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, a: Tensor, b: Tensor) -> Tensor:
+        """Forward pass for approximate equality comparison.
+        
+        Args:
+            ctx: Context (not used for comparison).
+            a: First input tensor.
+            b: Second input tensor.
+            
+        Returns:
+            Tensor with 1.0 where |a - b| < tolerance, 0.0 elsewhere.
+        """
         return a.f.is_close_zip(a, b)
 
 
 class Permute(Function):
+    """Dimension permutation function for tensors with automatic differentiation support."""
+
     @staticmethod
     def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
+        """Forward pass for dimension permutation.
+        
+        Args:
+            ctx: Context to save values for backward pass.
+            a: Input tensor to permute.
+            order: Tensor containing the permutation order.
+            
+        Returns:
+            Tensor with dimensions reordered according to the specified order.
+        """
         ctx.save_for_backward(order)
         order = [int(order[i]) for i in range(order.size)]
         return a._new(a._tensor.permute(*order))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+        """Backward pass for dimension permutation.
+        
+        Applies the inverse permutation to restore the original dimension order.
+        
+        Args:
+            ctx: Context with saved values from forward pass.
+            grad_output: Gradient of the output.
+            
+        Returns:
+            Tuple of (gradient with inverse permutation applied, 0.0 for order gradient).
+        """
         (order,) = ctx.saved_values
         order = [int(order[i]) for i in range(order.size)]
         inv_order = [0 for _ in range(len(order))]
